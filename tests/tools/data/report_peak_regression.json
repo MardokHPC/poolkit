@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "tool": "poolkit_advise",
+  "trace": {"path": "traces\\inference_transformer.jsonl", "ops": 3076, "allocs": 1538, "sha256": "31fc9efff2e99b2c7d1e75e89b26b1a21c322bf5069be1e6cd29a47ed9733b10"},
+  "config": {"growth": 1.7, "chunk_bytes": 1048576, "min_class_bytes": 256, "max_class_bytes": 2097152, "power_of_two": false, "extra_sizes": []},
+  "classes": 18,
+  "waste": {"internal": 0.087154, "tail": 0.00205},
+  "peak": {"resident_bytes": 50329805, "blocks": 39},
+  "retention_bound_bytes": 18874368
+}

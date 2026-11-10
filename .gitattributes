@@ -1,0 +1,47 @@
+# Sources and docs are LF everywhere; binaries are left untouched so that
+# Windows checkouts cannot corrupt them. Comments in generated tables stay
+# byte-identical across platforms, which keeps docs/cost-model-sweep.md
+# reproducible.
+* text=auto eol=lf
+
+*.hpp text eol=lf
+*.cuh text eol=lf
+*.cpp text eol=lf
+*.cu text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.cmake text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.py text eol=lf
+*.csv text eol=lf
+LICENSE text eol=lf
+CHANGELOG.md text eol=lf
+CONTRIBUTING.md text eol=lf
+
+# Batch helpers are CRLF: cmd.exe parses a LF-only .bat unreliably (a label at EOF
+# is the classic failure), and these two files are the documented way to build.
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.zip binary
+*.tgz binary
+*.exe binary
+*.dll binary
+*.lib binary
+*.obj binary
+*.pdb binary
+
+# --- GitHub language bar ---------------------------------------------------
+# The sidebar should describe the code, not the fixtures. Without these rules
+# the bar is dominated by the committed trace (3 076 lines of JSON), which says
+# nothing about the project, and two 30-line batch wrappers take a slice of it.
+docs/**                linguist-documentation
+traces/*.jsonl         linguist-generated
+traces/*.hist.txt      linguist-generated
+tests/tools/data/**    linguist-generated
+*.bat                  linguist-detectable=false

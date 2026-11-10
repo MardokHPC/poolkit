@@ -1,0 +1,211 @@
+# poolkit CI: three jobs, and a fourth one that is a template.
+#
+#   1. host-only  ubuntu-22.04 + windows-2022, no CUDA toolkit installed.
+#                 The core of this library is pure C++17 (size class table, slab
+#                 arithmetic, pool logic over the abstract `Backend`, the trace
+#                 parser, the advisor and the gate). This job is the proof that it
+#                 builds, warns-free and passes its tests on a machine with no GPU
+#                 and no nvcc — a product property, not a CI shortcut: it is what
+#                 makes the allocation policy testable everywhere. It also runs
+#                 `poolkit_advise` and `poolkit_gate` for real, on the committed
+#                 trace, because those two are the product.
+#
+#   2. cuda       ubuntu-22.04 with CUDA 11.8 (the documented floor) and 12.1,
+#                 windows-2022 with CUDA 12.9. Compiles the CUDA glue, the device
+#                 test, the tools and the CUPTI recorder/shim. **No GPU**: the
+#                 device suites exit 77 and ctest reports them SKIPPED (77 is
+#                 registered as SKIP_RETURN_CODE, so a green here never hides a
+#                 device test that did not run).
+#
+#   3. gpu        commented out: needs a self-hosted runner with a real card.
+#                 See the block at the bottom for what is missing.
+#
+# Every test step uses --output-on-failure, so a red build says why in the log
+# instead of asking whoever is on call to reproduce it.
+
+name: CI
+
+"on":
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CMAKE_BUILD_TYPE: Release
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. No CUDA, no nvcc, no GPU: the core and the two CLIs.
+  # ---------------------------------------------------------------------------
+  host-only:
+    name: host-only (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2022]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Ninja needs cl.exe on PATH on Windows; the runner's default shell keeps
+      # this ahead of Git's own link.exe (passing through bash would not).
+      - name: Setup MSVC developer command prompt (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Toolchain
+        shell: bash
+        run: |
+          cmake --version
+          ninja --version
+
+      # -DPOOLKIT_WITH_CUDA=OFF is the default, stated on purpose: this job must
+      # fail if the core ever grows a dependency on the toolkit. GoogleTest is
+      # fetched by CMake only when tests are enabled, pinned to a tag.
+      - name: Configure (host-only, tests ON)
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DPOOLKIT_BUILD_TESTS=ON
+          -DPOOLKIT_BUILD_TOOLS=ON
+          -DPOOLKIT_WITH_CUDA=OFF
+
+      - name: Build (warnings are errors)
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --timeout 600
+
+      # ctest already runs both, but a product that only ever appears as a green
+      # tick is not being demonstrated. These two commands are what the README
+      # tells a user to type, on a machine with no GPU.
+      - name: Product smoke test (advisor + gate, no GPU)
+        shell: bash
+        run: |
+          ./build/poolkit_advise --trace traces/inference_transformer.jsonl --top 5
+          ./build/poolkit_gate --baseline tests/tools/data/report_baseline.json \
+                               --current  tests/tools/data/report_baseline.json
+          echo "gate exit code: $?"
+
+  # ---------------------------------------------------------------------------
+  # 2. With CUDA: compile everything, run what can run without a card.
+  # ---------------------------------------------------------------------------
+  cuda:
+    name: cuda (${{ matrix.os }}, CUDA ${{ matrix.cuda }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, cuda: "11.8.0", nvcc_prepend: "" }
+          - { os: ubuntu-22.04, cuda: "12.1.1", nvcc_prepend: "" }
+          # The Windows image ships an MSVC that is newer than several CUDA
+          # toolkits accept; --allow-unsupported-compiler is exactly the switch
+          # for "the host compiler is fine, nvcc's version table is old". It is
+          # set only here because it is only needed here (the Linux entries run
+          # with a compiler the toolkit knows).
+          - { os: windows-2022, cuda: "12.9.2", nvcc_prepend: "--allow-unsupported-compiler" }
+
+    env:
+      # Passed to nvcc by its own convention, read from the environment.
+      NVCC_PREPEND_FLAGS: ${{ matrix.nvcc_prepend }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC developer command prompt (Windows only)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install CUDA ${{ matrix.cuda }}
+        uses: Jimver/cuda-toolkit@v0.2.36
+        with:
+          cuda: ${{ matrix.cuda }}
+          # The toolkit installs CUPTI under extras/CUPTI, which is what the
+          # recorder needs; the action's default package set includes it.
+          method: network
+
+      # CUDA::cupti (the imported target the recorder links) exists from CMake
+      # 3.25; ubuntu-22.04's 3.22 would silently skip poolkit_record and
+      # poolkit_inject, turning "the recorder is tested" into "the recorder was
+      # not built". POOLKIT_REQUIRE_CUPTI=ON below turns that into a configure
+      # error instead.
+      - name: CMake >= 3.25 (Linux, for CUDA::cupti)
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m pip install --upgrade --user "cmake>=3.25"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain
+        shell: bash
+        run: |
+          cmake --version
+          nvcc --version
+
+      - name: Configure (CUDA, sm_75, tests ON)
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CUDA_ARCHITECTURES=75
+          -DPOOLKIT_BUILD_TESTS=ON
+          -DPOOLKIT_BUILD_TOOLS=ON
+          -DPOOLKIT_WITH_CUDA=ON
+          -DPOOLKIT_REQUIRE_CUPTI=ON
+
+      - name: Build (warnings are errors, headers included)
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --timeout 600
+
+  # ---------------------------------------------------------------------------
+  # 3. GPU: TEMPLATE, deliberately commented out.
+  #
+  # Why it cannot simply be enabled: the device suites are written to exit 77
+  # when there is no device, and 77 is registered as SKIP_RETURN_CODE — which is
+  # the right behaviour (neither red nor a false green) but it means that on every
+  # GitHub-hosted runner, poolkit_test_device, poolkit_record_target_record,
+  # poolkit_record_trace_replays, poolkit_inject_record_target,
+  # poolkit_inject_trace_replays and poolkit_example_basic_usage are SKIPPED and
+  # have never actually executed in CI. A GPU job is the only way to change that.
+  #
+  # What is missing to turn it on:
+  #   * a self-hosted runner with an NVIDIA card and a driver (the labels below
+  #     are `[self-hosted, gpu]`; the workflow itself must live in the default
+  #     branch before GitHub will run it from pull requests);
+  #   * the runner must be **exclusive**: tools/measure_m4.cu and tools/bench.cu
+  #     measure wall time and cudaEventQuery latency, and another process on the
+  #     card turns those numbers into noise. For the same reason they are not
+  #     ctest entries;
+  #   * CUDA 12.6+ and a matching driver on that machine (this is the stack the
+  #     device numbers in docs/ were taken on), plus CUPTI from the toolkit — the
+  #     tests expect `cupti64_*.dll` next to the binaries, which the build copies;
+  #   * no --timeout relaxation: the four device entry points take well under a
+  #     minute on an RTX 2060 SUPER, so a timeout firing means a hang (the
+  #     injection shim's exit path is the one place where that has happened
+  #     during development, see docs/record.md §9).
+  #
+  # gpu:
+  #   name: gpu (self-hosted, real device)
+  #   runs-on: [self-hosted, gpu]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Configure (CUDA, tests ON)
+  #       run: >
+  #         cmake -S . -B build -G Ninja
+  #         -DCMAKE_BUILD_TYPE=Release
+  #         -DCMAKE_CUDA_ARCHITECTURES=75
+  #         -DPOOLKIT_BUILD_TESTS=ON
+  #         -DPOOLKIT_WITH_CUDA=ON
+  #     - name: Build
+  #       run: cmake --build build
+  #     - name: Test (the device suites must PASS here, not skip)
+  #       run: ctest --test-dir build --output-on-failure --timeout 900

@@ -1,0 +1,19 @@
+{
+  "schema": 2,
+  "tool": "poolkit_bench",
+  "trace": {"path": "traces\\inference_transformer.jsonl", "ops": 3076, "allocs": 1538, "sha256": "31fc9efff2e99b2c7d1e75e89b26b1a21c322bf5069be1e6cd29a47ed9733b10"},
+  "config": {"growth": 1.5, "chunk_bytes": 2097152, "min_class_bytes": 256, "max_class_bytes": 2097152, "power_of_two": true, "extra_sizes": []},
+  "classes": 34,
+  "waste": {"internal": 0.152338, "tail": 0.005429},
+  "peak": {"resident_bytes": 71303168, "blocks": 0},
+  "retention_bound_bytes": 71303168,
+  "bench": {
+    "schema": 1,
+    "env": {"gpu": "NVIDIA GeForce RTX 2060 SUPER", "compute": "sm_75", "driver": 13030, "runtime": 12010, "arch": "x86_64", "chunk_bytes": 2097152, "growth": 1.5, "min_class_bytes": 256, "max_class_bytes": 2097152, "warmup": 1, "repeat": 5},
+    "modes": [
+      {"mode": "pool", "ops": 3076, "allocs": 1538, "frees": 1538, "peak_bytes": 71303168, "peak_sampled": false, "sample_every_ops": 0, "wall_ns": {"median": 4954900, "p99": 5108100, "min": 4817300, "max": 5111100}, "alloc_ns": {"median": 400, "p99": 62700, "min": 200, "max": 244300}, "free_ns": {"median": 600, "p99": 800, "min": 600, "max": 8800}, "hit_ns": {"median": 400, "p99": 500, "min": 300, "max": 33800}, "hit_ops": 1496, "growth_ns": {"median": 57300, "p99": 123300, "min": 200, "max": 244300}, "growth_ops": 42, "slot_ns": {"median": 300, "p99": 300, "min": 200, "max": 700}, "slot_ops": 8, "chunk_ns": {"median": 62400, "p99": 123300, "min": 47900, "max": 244300}, "chunk_ops": 34, "large_ns": {"median": 0, "p99": 0, "min": 0, "max": 0}, "large_ops": 0},
+      {"mode": "cudamalloc", "ops": 3076, "allocs": 1538, "frees": 1538, "peak_bytes": 48234496, "peak_sampled": true, "sample_every_ops": 64, "wall_ns": {"median": 9998400, "p99": 10487200, "min": 9285400, "max": 10671800}, "alloc_ns": {"median": 2400, "p99": 58200, "min": 1700, "max": 134600}, "free_ns": {"median": 1800, "p99": 81000, "min": 1300, "max": 189200}},
+      {"mode": "cudaasync", "ops": 3076, "allocs": 1538, "frees": 1538, "peak_bytes": 67108864, "peak_sampled": true, "sample_every_ops": 64, "wall_ns": {"median": 2683900, "p99": 2770000, "min": 2348300, "max": 2821200}, "alloc_ns": {"median": 400, "p99": 800, "min": 300, "max": 409800}, "free_ns": {"median": 400, "p99": 600, "min": 400, "max": 4100}}
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+# poolkit is header-only and has no link-time dependency, so there is nothing to
+# find_dependency() here — not even CUDAToolkit: the public headers include a
+# CUDA header only when the consumer compiles with nvcc (config.hpp decides).
+include("${CMAKE_CURRENT_LIST_DIR}/poolkitTargets.cmake")
+
+check_required_components(poolkit)

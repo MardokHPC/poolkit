@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "tool": "poolkit_advise",
+  "trace": {"path": "traces\\another_workload.jsonl", "ops": 3077, "allocs": 1539, "sha256": "0000000000000000000000000000000000000000000000000000000000000001"},
+  "config": {"growth": 1.7, "chunk_bytes": 1048576, "min_class_bytes": 256, "max_class_bytes": 2097152, "power_of_two": false, "extra_sizes": []},
+  "classes": 18,
+  "waste": {"internal": 0.087154, "tail": 0.00205},
+  "peak": {"resident_bytes": 45754368, "blocks": 39},
+  "retention_bound_bytes": 18874368
+}

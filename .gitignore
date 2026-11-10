@@ -1,0 +1,56 @@
+# Build trees (Ninja in-tree and the Visual Studio layout)
+build/
+build-*/
+/build*/
+out/
+
+# IDE / editor state
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.nuser
+*.VC.db
+*.VC.opendb
+*.sln.docstates
+
+# Compiler / linker artifacts (in case the build lands outside build/)
+*.obj
+*.o
+*.exe
+*.dll
+*.lib
+*.a
+*.exp
+*.ilk
+*.pdb
+*.idb
+
+# CMake bookkeeping when someone configures in-source
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
+_deps/
+
+# Local-only documents: the plan and the running roadmap never get published
+DEVELOPMENT_PLAN.md
+docs/roadmap.md
+*_QA.md
+
+# Generated data: sample traces under tests/data/ are the exception
+*.csv
+!tests/data/
+!tests/data/*.csv
+
+# Recorded traces are generated, machine- and run-specific (addresses, ordinals):
+# the only *.jsonl that belongs in the repository is the one under traces/.
+*.jsonl
+!/traces/*.jsonl
+
+# Logs from local runs
+*.log
+docs/*.log
