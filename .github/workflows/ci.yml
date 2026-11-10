@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # Ninja needs cl.exe on PATH on Windows; the runner's default shell keeps
       # this ahead of Git's own link.exe (passing through bash would not).
@@ -119,7 +119,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup MSVC developer command prompt (Windows only)
         if: runner.os == 'Windows'
@@ -197,7 +197,7 @@ jobs:
   #   name: gpu (self-hosted, real device)
   #   runs-on: [self-hosted, gpu]
   #   steps:
-  #     - uses: actions/checkout@v4
+  #     - uses: actions/checkout@v5
   #     - name: Configure (CUDA, tests ON)
   #       run: >
   #         cmake -S . -B build -G Ninja
